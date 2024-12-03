@@ -1,74 +1,60 @@
 package com.crm.crm_web_app.service;
 
-import com.crm.crm_web_app.entity.Investment;
-import com.crm.crm_web_app.entity.Loss;
-import com.crm.crm_web_app.entity.Profit;
-import com.crm.crm_web_app.repository.InvestmentRepository;
-import com.crm.crm_web_app.repository.LossRepository;
-import com.crm.crm_web_app.repository.ProfitRepository;
+import com.crm.crm_web_app.dto.Report;
+import com.crm.crm_web_app.dto.ReportRequest;
+import com.crm.crm_web_app.repository.CustomerRepository;
+import com.crm.crm_web_app.repository.LeadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
 public class ReportService {
 
     @Autowired
-    private InvestmentRepository investmentRepository;
+    private CustomerRepository customerRepository;
+
     @Autowired
-    private ProfitRepository profitRepository;
-    @Autowired
-    private LossRepository lossRepository;
+    private LeadRepository leadRepository;
 
-    public BigDecimal calculateProfitLossForPeriod(LocalDate startDate, LocalDate endDate) {
-        // Get all investments, profits, and losses for the period
-        List<Investment> investments = investmentRepository.findByDateBetween(startDate, endDate);
-        List<Profit> profits = profitRepository.findByDateBetween(startDate, endDate);
-        List<Loss> losses = lossRepository.findByDateBetween(startDate, endDate);
+    public Report generateReport(ReportRequest reportRequest) {
 
-        BigDecimal totalInvestment = investments.stream()
-                .map(Investment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // If you're working with LocalDate, you should convert to Date, or use LocalDate for dates.
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-        BigDecimal totalProfit = profits.stream()
-                .map(Profit::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Assuming ReportRequest contains LocalDate fields (startDate and endDate), so you need to convert them to Date
+        Date startDate = convertLocalDateToDate(reportRequest.getStartDate());
+        Date endDate = convertLocalDateToDate(reportRequest.getEndDate());
 
-        BigDecimal totalLoss = losses.stream()
-                .map(Loss::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Now create the report with formatted start and end dates
+        Report report = new Report();
+        report.setStartDate(sdf.format(startDate));  // If you want to store the date as String
+        report.setEndDate(sdf.format(endDate));      // If you want to store the date as String
 
-        // Calculate total profit/loss
-        return totalProfit.subtract(totalLoss).subtract(totalInvestment);
-    }
-
-    public Map<String, BigDecimal> generateMonthlyReport(int month, int year) {
-        // Start and end of the month
-        LocalDate startDate = LocalDate.of(year, month, 1);
-        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
-        BigDecimal profitLoss = calculateProfitLossForPeriod(startDate, endDate);
-
-        Map<String, BigDecimal> report = new HashMap<>();
-        report.put("Profit/Loss for " + startDate.getMonth().toString() + " " + year, profitLoss);
         return report;
     }
 
-    public Map<String, BigDecimal> generateYearlyReport(int year) {
-        // Start and end of the year
-        LocalDate startDate = LocalDate.of(year, 1, 1);
-        LocalDate endDate = LocalDate.of(year, 12, 31);
-
-        BigDecimal profitLoss = calculateProfitLossForPeriod(startDate, endDate);
-
-        Map<String, BigDecimal> report = new HashMap<>();
-        report.put("Profit/Loss for " + year, profitLoss);
+    public Map<String, Object> generateReport(Date startDate, Date endDate) {
+        Map<String, Object> report = new HashMap<>();
+        report.put("totalCustomers", customerRepository.count());
+        report.put("totalLeads", leadRepository.count());
+        report.put("conversionRate", calculateConversionRate());
+        report.put("dateRange", String.format("%tF to %tF", startDate, endDate));
         return report;
+    }
+
+    private double calculateConversionRate() {
+        long totalLeads = leadRepository.count();
+        long convertedLeads = leadRepository.countByStatus("Converted");
+        return totalLeads == 0 ? 0 : (double) convertedLeads / totalLeads * 100;
+    }
+
+    // Helper method to convert LocalDate to Date
+    private Date convertLocalDateToDate(java.time.LocalDate localDate) {
+        return java.sql.Date.valueOf(localDate);  // Convert LocalDate to Date (java.sql.Date)
     }
 }
-

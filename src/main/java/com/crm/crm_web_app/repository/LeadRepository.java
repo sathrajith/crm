@@ -24,4 +24,5 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Lead> findBySegment(String segment);
 
 
+    Long countByStatus(String status);
 }

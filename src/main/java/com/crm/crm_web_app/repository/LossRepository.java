@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface LossRepository extends JpaRepository<Loss, Long> {
     List<Loss> findByDateBetween(LocalDate startDate, LocalDate endDate);
+
 }

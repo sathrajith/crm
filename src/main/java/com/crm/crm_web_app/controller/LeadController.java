@@ -3,6 +3,8 @@ package com.crm.crm_web_app.controller;
 import com.crm.crm_web_app.entity.Lead;
 import com.crm.crm_web_app.service.LeadService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,37 +13,61 @@ import java.util.List;
 @RequestMapping("/api/leads")
 public class LeadController {
 
-    @Autowired
-    private LeadService leadService;
+    private final LeadService leadService;
 
-    // Create or update a lead
+    @Autowired
+    public LeadController(LeadService leadService) {
+        this.leadService = leadService;
+    }
+
+    // Create or update a lead score
     @PostMapping("/score")
-    public void scoreLead(@RequestBody Lead lead) {
+    public ResponseEntity<String> scoreLead(@RequestBody Lead lead) {
         leadService.scoreLead(lead);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Lead scored successfully.");
     }
 
     // Get all leads
     @GetMapping
-    public List<Lead> getAllLeads() {
-        return leadService.getAllLeads();
+    public ResponseEntity<List<Lead>> getAllLeads() {
+        List<Lead> leads = leadService.getAllLeads();
+        return ResponseEntity.ok(leads);
     }
 
     // Get leads by segment
     @GetMapping("/segment/{segment}")
-    public List<Lead> getLeadsBySegment(@PathVariable String segment) {
-        return leadService.getLeadsBySegment(segment);
+    public ResponseEntity<List<Lead>> getLeadsBySegment(@PathVariable String segment) {
+        List<Lead> leads = leadService.getLeadsBySegment(segment);
+        if (leads.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(leads);
+        }
+        return ResponseEntity.ok(leads);
     }
 
     // Archive a lead
     @PostMapping("/archive/{leadId}")
-    public void archiveLead(@PathVariable Long leadId) {
-        Lead lead = leadService.getLeadById(leadId);  // You can implement a method to get the lead by ID
+    public ResponseEntity<String> archiveLead(@PathVariable Long leadId) {
+        Lead lead = leadService.getLeadById(leadId);
+        if (lead == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lead not found.");
+        }
         leadService.archiveLead(lead);
+        return ResponseEntity.ok("Lead archived successfully.");
     }
 
     // Delete a lead
     @DeleteMapping("/{leadId}")
-    public void deleteLead(@PathVariable Long leadId) {
+    public ResponseEntity<String> deleteLead(@PathVariable Long leadId) {
+        Lead lead = leadService.getLeadById(leadId);
+        if (lead == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lead not found.");
+        }
         leadService.deleteLead(leadId);
+        return ResponseEntity.ok("Lead deleted successfully.");
     }
+    @GetMapping("/{leadId}")
+    public Lead getLeadById(@PathVariable Long leadId) {
+        return leadService.getLeadById(leadId);
+    }
+
 }
