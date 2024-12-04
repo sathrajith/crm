@@ -1,5 +1,7 @@
 package com.crm.crm_web_app.dto;
 
+import java.math.BigDecimal;
+
 public class Report {
     private String reportTitle;
     private Double totalProfit;
@@ -7,6 +9,13 @@ public class Report {
     private Double totalInvestment;
     private String startDate;
     private String endDate;
+    private Long totalCustomers;
+    private Long totalLeads;
+    private double conversionRate;
+    private BigDecimal totalRevenue;
+    private BigDecimal totalExpenses;
+    private BigDecimal netProfit;
+
 
     // Getters and Setters
     public String getStartDate() {
@@ -53,4 +62,44 @@ public class Report {
     public void setTotalInvestment(Double totalInvestment) {
         this.totalInvestment = totalInvestment;
     }
+    public Long getTotalCustomers() {
+        return totalCustomers;
+    }
+    public void setTotalCustomers(Long totalCustomers) {
+        this.totalCustomers = totalCustomers;
+    }
+    public Long getTotalLeads() {
+        return totalLeads;
+    }
+    public void setTotalLeads(Long totalLeads) {
+        this.totalLeads = totalLeads;
+    }
+    public double getConversionRate() {
+        return conversionRate;
+    }
+    public void setConversionRate(double conversionRate) {
+        this.conversionRate = conversionRate;
+    }
+    public BigDecimal getTotalRevenue() {
+        return totalRevenue;
+    }
+    public void setTotalRevenue(BigDecimal totalRevenue) {
+        this.totalRevenue = totalRevenue;
+    }
+    public BigDecimal getTotalExpenses() {
+        return totalExpenses;
+    }
+    public void setTotalExpenses(BigDecimal totalExpenses) {
+        this.totalExpenses = totalExpenses;
+    }
+    public BigDecimal getNetProfit() {
+        return netProfit;
+    }
+    public void setNetProfit(BigDecimal netProfit) {
+        this.netProfit = netProfit;
+    }
+
+
+
+
 }
