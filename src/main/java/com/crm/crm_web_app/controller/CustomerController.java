@@ -13,8 +13,12 @@ import java.util.List;
 @RequestMapping("/api/customers")
 public class CustomerController {
 
+    private final CustomerService customerService;
+
     @Autowired
-    private CustomerService customerService;
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
+    }
 
     // Create or update a customer
     @PostMapping
@@ -60,5 +64,15 @@ public class CustomerController {
 //            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 //        }
         return ResponseEntity.ok(updatedCustomer);
+    }
+    @PostMapping("/{customerId}/assign-segment/{segmentId}")
+    public Customer assignCustomerToSegment(@PathVariable Long customerId, @PathVariable Long segmentId) {
+        return customerService.categorizeCustomerToSegment(customerId, segmentId);
+    }
+
+    // Endpoint to get customers by segment
+    @GetMapping("/segment/{segmentId}")
+    public List<Customer> getCustomersBySegment(@PathVariable Long segmentId) {
+        return customerService.getCustomersBySegment(segmentId);
     }
 }
