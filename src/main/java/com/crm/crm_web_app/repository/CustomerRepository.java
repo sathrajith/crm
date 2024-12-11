@@ -15,4 +15,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // Custom query to find customers by sales representative ID
     List<Customer> findBySalesRepId(Long salesRepId);
+    
+    List<Customer> findBySegmentId(Long segmentId);  // Find customers by segment
 }

@@ -16,19 +16,22 @@ public class Customer {
     private String phone;
     private String address;
     private String phoneNumber;
-    private String segment;
     private String firstName;
     private String lastName;
     private boolean active;
 
-    @OneToMany
+    @ManyToOne
+    @JoinColumn(name = "segment_id")
+    private Segment segment;  // Now, the segment is of type Segment
+
+    @OneToMany(mappedBy = "customer")
     private List<Invoice> invoices;
+
     @Column(name = "sales_rep_id")
     private Long salesRepId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
 
     // Getter and Setter methods
     public Long getId() {
@@ -79,12 +82,12 @@ public class Customer {
         this.phoneNumber = phoneNumber;
     }
 
-    public String getSegment() {
+    public Segment getSegment() {
         return segment;
     }
 
-    public void setSegment(String segment) {
-        this.segment = segment;
+    public void setSegment(Segment segment) {
+        this.segment = segment;  // Set the Segment object
     }
 
     public String getFirstName() {
@@ -126,9 +129,11 @@ public class Customer {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
     public List<Invoice> getInvoices() {
         return invoices;
     }
+
     public void setInvoices(List<Invoice> invoices) {
         this.invoices = invoices;
     }

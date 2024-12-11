@@ -1,67 +1,39 @@
 package com.crm.crm_web_app.service;
 
-import com.crm.crm_web_app.components.WorkflowListener;
 import com.crm.crm_web_app.entity.Lead;
 import com.crm.crm_web_app.entity.LeadScoreHistory;
 import com.crm.crm_web_app.repository.LeadRepository;
 import com.crm.crm_web_app.repository.LeadScoreHistoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class LeadService {
 
     private static final Logger logger = LoggerFactory.getLogger(LeadService.class);
 
-    private final LeadRepository leadRepository;
-    private final LeadScoreHistoryRepository leadScoreHistoryRepository;
-    private final EmailService emailService;
-    private final WorkflowListener workflowListener;
+    @Autowired
+    private LeadRepository leadRepository;
 
-    // Constructor-based dependency injection
-    public LeadService(
-            LeadRepository leadRepository,
-            LeadScoreHistoryRepository leadScoreHistoryRepository,
-            EmailService emailService,
-            WorkflowListener workflowListener) {
-        this.leadRepository = leadRepository;
-        this.leadScoreHistoryRepository = leadScoreHistoryRepository;
-        this.emailService = emailService;
-        this.workflowListener = workflowListener;
-    }
+    @Autowired
+    private LeadScoreHistoryRepository leadScoreHistoryRepository;
 
-    // Score the lead based on defined criteria
+    @Autowired
+    private EmailService emailService;
+
+    // Score the lead based on criteria and segment it
     public void scoreLead(Lead lead) {
+        int score = 0;
         logger.info("Scoring lead with ID: {}", lead.getId());
 
-        int score = calculateLeadScore(lead);
-        lead.setScore(score);
-
-        // Assign a segment based on the score
-        String segment = determineSegment(score);
-        lead.setSegment(segment);
-
-        // Log score history and save updated lead
-        logLeadScoreHistory(lead);
-        leadRepository.save(lead);
-
-        // Notify the sales team if the lead is "Hot"
-        if ("Hot".equals(segment)) {
-            notifySalesTeam(lead);
-        }
-    }
-
-    // Calculate lead score based on predefined rules
-    private int calculateLeadScore(Lead lead) {
-        int score = 0;
-
-        if ("Website".equals(lead.getSource())) {
+        // Example scoring rules
+        if (lead.getSource().equals("Website")) {
             score += 10;
         }
         if (lead.getEmail() != null && !lead.getEmail().isEmpty()) {
@@ -71,98 +43,101 @@ public class LeadService {
             score += 5;
         }
 
-        return score;
+        lead.setScore(score);
+
+        // Segment the lead based on the score
+        String segment = segmentLead(lead);
+        lead.setSegment(segment);
+
+        // Log lead score history
+        logLeadScoreHistory(lead);
+
+        leadRepository.save(lead); // Save the lead with the updated score and segment
+
+        // Notify sales team if lead is Hot
+        if ("Hot".equals(segment)) {
+            notifySalesTeam(lead);
+        }
     }
 
-    // Determine the lead's segment based on its score
-    private String determineSegment(int score) {
-        if (score >= 20) {
+    // Method to determine the segment based on the lead's score
+    public String segmentLead(Lead lead) {
+        if (lead.getScore() >= 20) {
             return "Hot";
-        } else if (score >= 10) {
+        } else if (lead.getScore() >= 10) {
             return "Warm";
         } else {
             return "Cold";
         }
     }
 
-    // Log the lead's score history
-    private void logLeadScoreHistory(Lead lead) {
+    // Validate lead fields (e.g., email, phone number)
+    public boolean validateLead(Lead lead) {
+        return lead.getEmail() != null && lead.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$") &&
+                lead.getPhoneNumber() != null && lead.getPhoneNumber().matches("^[0-9]{10}$");
+    }
+
+    // Log lead score history
+    public void logLeadScoreHistory(Lead lead) {
         LeadScoreHistory history = new LeadScoreHistory();
         history.setLeadId(lead.getId());
         history.setScore(lead.getScore());
         history.setDateAssigned(LocalDateTime.now());
         leadScoreHistoryRepository.save(history);
-        logger.info("Logged score history for lead ID: {}", lead.getId());
     }
 
-    // Notify the sales team about a "Hot" lead
-    private void notifySalesTeam(Lead lead) {
-        emailService.sendHotLeadNotification(lead);
-        logger.info("Notification sent for hot lead with ID: {}", lead.getId());
-    }
-
-    // Update the lead's status and invoke workflow actions
-    @Transactional
-    public Lead updateLeadStatus(Long leadId, String newStatus) {
-        Lead lead = leadRepository.findById(leadId)
-                .orElseThrow(() -> new IllegalArgumentException("Lead not found with ID: " + leadId));
-
-        lead.setStatus(newStatus);
-        Lead updatedLead = leadRepository.save(lead);
-
-        // Trigger workflow listener explicitly
-        workflowListener.handleLeadStatusChange(updatedLead);
-
-        logger.info("Updated status for lead ID: {} to {}", leadId, newStatus);
-        return updatedLead;
-    }
-
-    // Assign the lead to a sales representative
+    // Assign lead to a sales representative based on score
     public void assignLeadToRep(Lead lead) {
         String salesRep = lead.getScore() >= 20 ? "Senior Rep" : "Junior Rep";
         lead.setAssignedTo(salesRep);
         leadRepository.save(lead);
-        logger.info("Assigned lead ID: {} to {}", lead.getId(), salesRep);
     }
 
-    // Retrieve all leads
+    // Send a notification to the sales team if a lead is Hot
+    public void notifySalesTeam(Lead lead) {
+        if ("Hot".equals(lead.getSegment())) {
+            emailService.sendHotLeadNotification(lead);
+            logger.info("Hot lead notification sent for lead ID: {}", lead.getId());
+        }
+    }
+
+    // Get all leads
     public List<Lead> getAllLeads() {
         return leadRepository.findAll();
     }
 
-    // Retrieve leads by segment
+    // Get leads by segment
     public List<Lead> getLeadsBySegment(String segment) {
-        return leadRepository.findBySegment(segment);
+        return leadRepository.findBySegment(segment); // Make sure your repository supports this query
     }
 
-    // Retrieve a specific lead by ID
+    // Get a lead by ID
     public Lead getLeadById(Long leadId) {
-        return leadRepository.findById(leadId)
-                .orElseThrow(() -> new IllegalArgumentException("Lead not found with ID: " + leadId));
+        Optional<Lead> lead = leadRepository.findById(leadId);
+        if (lead.isPresent()) {
+            return lead.get();
+        } else {
+            throw new IllegalArgumentException("Lead not found with ID: " + leadId);
+        }
     }
 
-    // Archive a lead
-    @Transactional
+    // Archive a lead (e.g., if no longer relevant)
     public void archiveLead(Lead lead) {
         lead.setArchived(true);
-        lead.setArchivedAt(LocalDateTime.now());  // Assuming `archivedAt` field is added to the `Lead` entity
         leadRepository.save(lead);
-        logger.info("Archived lead ID: {}", lead.getId());
+        logger.info("Lead ID: {} archived", lead.getId());
     }
 
     // Delete a lead
     public void deleteLead(Long leadId) {
-        try {
-            leadRepository.deleteById(leadId);
-            logger.info("Deleted lead ID: {}", leadId);
-        } catch (EmptyResultDataAccessException e) {
-            logger.error("Lead with ID {} not found for deletion", leadId);
-        }
+        leadRepository.deleteById(leadId);
+        logger.info("Lead ID: {} deleted", leadId);
     }
 
-    // Track performance of a lead source
+    // Track lead source performance
     public void trackLeadSource(String source) {
-        leadRepository.updateLeadSourceStatistics(source); // Ensure repository supports this
-        logger.info("Tracked lead source: {}", source);
+        // Assuming you have a statistics service or repository to track lead sources
+        leadRepository.updateLeadSourceStatistics(source);
+        logger.info("Lead source tracked: {}", source);
     }
 }
