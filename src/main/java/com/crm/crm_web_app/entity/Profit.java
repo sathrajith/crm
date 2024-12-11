@@ -2,6 +2,8 @@ package com.crm.crm_web_app.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +13,10 @@ public class Profit {
 
     @Id
     private Long id;
+    
+    @ManyToOne
+    @JoinColumn(name = "investment_id")  // Mapping the foreign key to Investment
+    private Investment investment;
 
     private BigDecimal amount;
     private LocalDate date;
