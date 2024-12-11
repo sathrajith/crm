@@ -1,7 +1,10 @@
 package com.crm.crm_web_app.service;
 
 import com.crm.crm_web_app.entity.Customer;
+import com.crm.crm_web_app.entity.Segment;
 import com.crm.crm_web_app.repository.CustomerRepository;
+import com.crm.crm_web_app.repository.SegmentRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,10 +13,32 @@ import java.util.Optional;
 
 @Service
 public class CustomerService {
+	private final CustomerRepository customerRepository;
+	private final SegmentRepository segmentRepository;
+	   @Autowired
+	    public CustomerService(CustomerRepository customerRepository, SegmentRepository segmentRepository) {
+	        this.customerRepository = customerRepository;
+	        this.segmentRepository = segmentRepository;
+	    }
+    
 
-    @Autowired
-    private CustomerRepository customerRepository;
+	   public Customer categorizeCustomerToSegment(Long customerId, Long segmentId) {
+	        Optional<Customer> customerOpt = customerRepository.findById(customerId);
+	        Optional<Segment> segmentOpt = segmentRepository.findById(segmentId);
 
+	        if (customerOpt.isPresent() && segmentOpt.isPresent()) {
+	            Customer customer = customerOpt.get();
+	            Segment segment = segmentOpt.get();
+	            customer.setSegment(segment);  // Assign segment to customer
+	            return customerRepository.save(customer);  // Save updated customer
+	        }
+	        return null;  // Return null if customer or segment not found
+	    }
+
+	    // Example: Get customers by segment
+	    public List<Customer> getCustomersBySegment(Long segmentId) {
+	        return customerRepository.findBySegmentId(segmentId);  // Custom query to find customers by segment
+	    }
     // Save or update a customer
     public Customer saveCustomer(Customer customer) {
         return customerRepository.save(customer);
